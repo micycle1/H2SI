@@ -1,4 +1,4 @@
 install:
   - cd java
-  - mvn wrapper:wrapper -Dmaven=3.13.0
+  - mvn wrapper:wrapper -Dmaven=3.9.9
   - ./mvnw install -DskipTests
