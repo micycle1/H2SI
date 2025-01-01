@@ -1,6 +1,6 @@
 install:
   - cd java
   - mvn wrapper:wrapper -Dmaven=3.9.9
-  - ./mvnw -B install -DskipTests
+  - ./mvnw -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn install -DskipTests
 env:
   ARTIFACT: "h2si"
