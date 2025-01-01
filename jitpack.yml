@@ -1,6 +1,6 @@
 install:
   - cd java
   - mvn wrapper:wrapper -Dmaven=3.9.9
-  - ./mvnw install -DskipTests
+  - ./mvnw install -DskipTests --no-transfer-progress
 env:
   ARTIFACT: "h2si"
