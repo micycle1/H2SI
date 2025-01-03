@@ -1,8 +1,6 @@
 package com.github.micycle1.h2si;
 
 import static java.lang.Math.PI;
-import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static java.lang.Math.sqrt;
 import static net.jafama.FastMath.atan;
 import static net.jafama.FastMath.atan2;
@@ -14,8 +12,7 @@ import org.apache.commons.numbers.complex.Complex;
 import net.jafama.FastMath;
 
 /**
- * The H2SI (<i>Hilbert square, super-importance</i>) colour space, a perceptual
- * colour space designed to match human colour perception.
+ * The H2SI (<i>Hilbert square, super-importance</i>) perceptual colour space.
  *
  * <p>
  * This implementation is based on the paper "H2SI – A New Perceptual Colour
@@ -54,8 +51,8 @@ import net.jafama.FastMath;
 public class H2SI {
 
 	/**
-	 * Converts HSI (Hue, Saturation, Intensity) colour values into their H2SI
-	 * colour space representation, comprising a set of three complex numbers.
+	 * Converts HSI (hue, saturation, intensity) colour values into their H2SI
+	 * colour space representation, comprising a complex number triplet.
 	 *
 	 * @param H The hue component, defined within the range [0, 2π].
 	 * @param S The saturation component, defined within the range [0, 1].
@@ -76,9 +73,9 @@ public class H2SI {
 	}
 
 	public static double[] h2sitoHSI(Complex... complexes) {
-//	    if (complexes.length < 3) {
-//	        return new double[] {0, 0, 0}; // or throw an exception
-//	    }
+		if (complexes.length != 3) {
+			throw new IllegalArgumentException("Three Complex numbers are required.");
+		}
 		Complex X1 = complexes[0];
 		Complex X2 = complexes[1];
 		Complex X3 = complexes[2];
@@ -87,36 +84,34 @@ public class H2SI {
 		double I = X1.getReal() * X1.getReal() / (1 - S / 2);
 		double H = atan2(X3.getReal() + X2.getImaginary(), X2.getReal() + X3.getImaginary());
 
+		// Adjust H to be in [0, 2π]
 		if (H < 0) {
-			H = 2 * Math.PI + H;
+			H = (2 * PI) + H;
 		}
 
-		// Clamp values
-		S = Math.min(Math.max(S, 0), 1);
-		I = Math.min(Math.max(I, 0), 1);
+		// Clamp values in case of slight overflow
+		S = S > 1 ? 1 : S < 0 ? 0 : S;
+		I = I > 1 ? 1 : I < 0 ? 0 : I;
 
 		return new double[] { H, S, I };
 	}
-	
+
 	/**
-	 * Linearly interpolate two H2SI colours.
-	 * @param X1a
-	 * @param X2a
-	 * @param X3a
-	 * @param X1b
-	 * @param X2b
-	 * @param X3b
+	 * Linearly interpolate between two H2SI colours.
+	 * 
+	 * @param h2siA
+	 * @param h2siB
 	 * @param t
 	 * @return
 	 */
-	public static Complex[] interpolate(Complex X1a, Complex X2a, Complex X3a, Complex X1b, Complex X2b, Complex X3b, double t) {
-		Complex X1 = X1a.multiply(1 - t).add(X1b.multiply(t));
-		Complex X2 = X2a.multiply(1 - t).add(X2b.multiply(t));
-		Complex X3 = X3a.multiply(1 - t).add(X3b.multiply(t));
+	public static Complex[] interpolateH2si(Complex[] h2siA, Complex[] h2siB, double t) {
+		Complex X1 = h2siA[0].multiply(1 - t).add(h2siB[0].multiply(t));
+		Complex X2 = h2siA[1].multiply(1 - t).add(h2siB[1].multiply(t));
+		Complex X3 = h2siA[2].multiply(1 - t).add(h2siB[2].multiply(t));
 		return new Complex[] { X1, X2, X3 };
 	}
 
-	public static double[] hsiToH2siComponents(double H, double S, double I) {
+	public static double[] hsiToH2siReals(double H, double S, double I) {
 		// Performance note: This optimized version uses:
 		// - 4 sqrt calls: sqrt(1-S/2), sqrt((1-I)/I), sqrt(1+x*x), sqrt(S/2)
 		// - 1 cos call: cos(H)
@@ -168,8 +163,8 @@ public class H2SI {
 	}
 
 	/**
-	 * Converts a 6-dimensional real H2SI color space vector into HSI (Hue,
-	 * Saturation, Intensity) components. This method expects an array of six
+	 * Converts a 6-dimensional real H2SI color space vector into HSI (hue,
+	 * saturation, intensity) components. This method expects an array of six
 	 * elements representing the real and imaginary parts of the three complex
 	 * components of the H2SI color space.
 	 *
@@ -186,9 +181,9 @@ public class H2SI {
 	 *         normalized between 0 and 2π. - [1]: Saturation (S), clamped between 0
 	 *         and 1. - [2]: Intensity (I), clamped between 0 and 1.
 	 */
-	public static double[] h2siComponentsToHSI(double[] components) {
+	public static double[] h2siRealsToHSI(double[] components) {
 		if (components.length != 6) {
-			throw new IllegalArgumentException("Expected 6 components");
+			throw new IllegalArgumentException("Expected 6 components.");
 		}
 
 		// Extract components
@@ -208,14 +203,45 @@ public class H2SI {
 
 		// Adjust H to be in [0, 2π]
 		if (H < 0) {
-			H = 2 * PI + H;
+			H = (2 * PI) + H;
 		}
-//		H = FastMath.normalizeZeroTwoPi(H);
 
 		// Clamp values in case of slight overflow
-		S = min(max(S, 0), 1);
-		I = min(max(I, 0), 1);
+		S = S > 1 ? 1 : S < 0 ? 0 : S;
+		I = I > 1 ? 1 : I < 0 ? 0 : I;
 
 		return new double[] { H, S, I };
+	}
+
+	public static double[] interpolateH2siReals(double[] realsA, double[] realsB, double t) {
+		double[] result = new double[6];
+		double oneMinusT = 1.0 - t;
+
+		// Linear interpolation for each component
+		for (int i = 0; i < 6; i++) {
+			result[i] = realsA[i] * oneMinusT + realsB[i] * t;
+		}
+
+		return result;
+	}
+
+	public static double[] rgbToHSI(double r, double g, double b) {
+		double x = Math.min(Math.min(r, g), b);
+		double y = Math.max(Math.max(r, g), b);
+		double I = (x + y) / 2.0;
+		double S = y - x;
+		double c1 = r - (g + b) / 2.0;
+		double c2 = (sqrt(3) * (b - g)) / 2.0;
+		double H = atan2(c2, c1);
+		if (H < 0) {
+			H = (2 * PI) + H;
+		}
+
+		return new double[] { H, S, I };
+	}
+	
+	public static void main(String[] args) {
+		   double[] hsi = rgbToHSI(1, 0, 0);
+	        System.out.println("H: " + hsi[0] + ", S: " + hsi[1] + ", I: " + hsi[2]);
 	}
 }

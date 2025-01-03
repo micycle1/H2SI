@@ -62,8 +62,8 @@ public class H2SIBenchmark {
 	@Threads(1)
 	public void testRoundTripComponents(Blackhole bh) {
 		for (double[] hsi : hsiValues) {
-			double[] components = H2SI.hsiToH2siComponents(hsi[0], hsi[1], hsi[2]);
-			double[] result = H2SI.h2siComponentsToHSI(components);
+			double[] components = H2SI.hsiToH2siReals(hsi[0], hsi[1], hsi[2]);
+			double[] result = H2SI.h2siRealsToHSI(components);
 			bh.consume(result);
 		}
 	}
